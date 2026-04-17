@@ -1,0 +1,21 @@
+# Synthetic PDE data & heat solve
+grid_size: 32
+num_pde_steps: 50
+kappa: 0.1
+dt: null  # if null, chosen from stability bound
+boundary_mode: fourier  # random | fourier
+
+# Diffusion
+num_diffusion_steps: 200
+
+# Training
+lambda_traj: 0.5
+batch_size: 16
+learning_rate: 1.0e-4
+num_epochs: 50
+num_traj_loss_steps: 4
+
+# Dataset
+train_samples: 1000
+val_samples: 200
+seed: 42

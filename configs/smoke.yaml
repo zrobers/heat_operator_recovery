@@ -1,0 +1,17 @@
+# Fast local smoke test (small data, few epochs)
+grid_size: 32
+num_pde_steps: 20
+kappa: 0.1
+dt: null
+boundary_mode: fourier
+
+num_diffusion_steps: 50
+lambda_traj: 0.5
+batch_size: 8
+learning_rate: 1.0e-4
+num_epochs: 2
+num_traj_loss_steps: 3
+
+train_samples: 32
+val_samples: 8
+seed: 42
