@@ -87,13 +87,25 @@ def plot_grids(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default=str(ROOT / "configs" / "default.yaml"))
+    parser.add_argument(
+        "--split",
+        type=str,
+        choices=("test", "train", "val"),
+        default="test",
+        help="Which split to evaluate (default: test = held-out 20%%).",
+    )
     args = parser.parse_args()
 
     cfg = load_config(args.config)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    val_path = ROOT / "outputs" / "data" / "val.pt"
-    pack = torch.load(val_path, map_location=device)
+    data_path = ROOT / "outputs" / "data" / f"{args.split}.pt"
+    if not data_path.is_file() and args.split == "test":
+        legacy = ROOT / "outputs" / "data" / "val.pt"
+        if legacy.is_file():
+            print(f"Note: {data_path} missing; using legacy {legacy}")
+            data_path = legacy
+    pack = torch.load(data_path, map_location=device)
     boundaries = pack["boundaries"]
     trajectories = pack["trajectories"]
 
@@ -121,7 +133,7 @@ def main() -> None:
     print(f"final_state_mse: {fs_mse}")
     print(f"trajectory_mse: {tr_mse}")
 
-    # Plots for first validation sample
+    # Plots for first sample in this split
     idx = 0
     boundary = boundaries[idx]
     traj = trajectories[idx]

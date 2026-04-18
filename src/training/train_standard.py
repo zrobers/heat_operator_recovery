@@ -1,4 +1,4 @@
-"""Train conditional denoising model with trajectory-consistency loss."""
+"""Standard conditional DDPM: denoise only the *final* field u(·, T) given the boundary (no trajectory loss)."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from tqdm import tqdm
 from src.data.dataset import HeatTrajectoryDataset
 from src.models.diffusion import GaussianDiffusion
 from src.models.unet import SmallUNet
-from src.training.losses import total_loss
+from src.training.losses import base_noise_loss
 from src.utils.config import load_config
 
 
@@ -22,7 +22,7 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=str,
-        default="model.pt",
+        default="model_standard_final.pt",
         help="Checkpoint filename under outputs/checkpoints/",
     )
     args = parser.parse_args()
@@ -52,55 +52,38 @@ def main() -> None:
     model = SmallUNet(in_ch=2, base=32, time_dim=128).to(device)
     opt = torch.optim.Adam(model.parameters(), lr=float(cfg["learning_rate"]))
 
-    lambda_traj = float(cfg["lambda_traj"])
-    k_steps = int(cfg["num_traj_loss_steps"])
-    t_traj_k = torch.linspace(0, num_diff - 1, steps=k_steps).long()
-
     epochs = int(cfg["num_epochs"])
     ckpt_dir = root / "outputs" / "checkpoints"
     ckpt_dir.mkdir(parents=True, exist_ok=True)
+    out_path = ckpt_dir / args.output
 
     for epoch in range(epochs):
         model.train()
-        pbar = tqdm(loader, desc=f"epoch {epoch+1}/{epochs}")
-        running = {"tot": 0.0, "base": 0.0, "traj": 0.0}
+        pbar = tqdm(loader, desc=f"[standard/final-only] epoch {epoch+1}/{epochs}")
+        running = 0.0
         n = 0
         for batch in pbar:
             boundary = batch["boundary"].to(device)
             trajectory = batch["trajectory"].to(device)
             bsz = trajectory.shape[0]
+            x0 = trajectory[:, -1].unsqueeze(1)
             t_diff = torch.randint(0, num_diff, (bsz,), device=device, dtype=torch.long)
 
             opt.zero_grad(set_to_none=True)
-            l_tot, l_base, l_traj = total_loss(
-                model,
-                diffusion,
-                trajectory,
-                boundary,
-                t_diff,
-                t_traj_k.to(device),
-                lambda_traj=lambda_traj,
-            )
-            l_tot.backward()
+            loss = base_noise_loss(model, diffusion, x0, boundary, t_diff)
+            loss.backward()
             opt.step()
 
-            running["tot"] += float(l_tot.item())
-            running["base"] += float(l_base.item())
-            running["traj"] += float(l_traj.item())
+            running += float(loss.item())
             n += 1
-            pbar.set_postfix(
-                loss=f"{running['tot']/n:.5f}",
-                base=f"{running['base']/n:.5f}",
-                traj=f"{running['traj']/n:.5f}",
-            )
+            pbar.set_postfix(loss=f"{running/n:.5f}")
 
-    out_path = ckpt_dir / args.output
     torch.save(
         {
             "model": model.state_dict(),
             "diffusion": {"num_timesteps": diffusion.num_timesteps},
             "config": dict(cfg),
-            "training_mode": "trajectory_aligned",
+            "training_mode": "standard_final_field",
         },
         out_path,
     )

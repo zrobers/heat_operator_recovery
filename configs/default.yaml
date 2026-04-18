@@ -1,6 +1,9 @@
 # Synthetic PDE data & heat solve
 grid_size: 32
-num_pde_steps: 50
+# Integrate on this grid (if > grid_size, trajectories are downsampled for storage).
+# Set equal to grid_size for a single-resolution run.
+solve_grid_size: 96
+num_pde_steps: 500
 kappa: 0.1
 dt: null  # if null, chosen from stability bound
 boundary_mode: fourier  # random | fourier
@@ -15,7 +18,7 @@ learning_rate: 1.0e-4
 num_epochs: 50
 num_traj_loss_steps: 4
 
-# Dataset
-train_samples: 5000
-val_samples: 200
+# Dataset — 80% train / 20% test (held out for final evaluation; total 5000)
+train_samples: 4000
+test_samples: 1000
 seed: 42

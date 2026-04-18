@@ -12,6 +12,7 @@ learning_rate: 1.0e-4
 num_epochs: 2
 num_traj_loss_steps: 3
 
+# 80/20 split (40 total)
 train_samples: 32
-val_samples: 8
+test_samples: 8
 seed: 42
