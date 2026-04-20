@@ -1,4 +1,4 @@
-# Mechanism-aligned diffusion (Phase I): 2D heat equation
+# Mechanism-aligned diffusion: 2D heat equation
 
 Minimal end-to-end pipeline: synthetic **2D heat equation** data, a **conditional DDPM** that denoises interior fields given **Dirichlet boundaries**, and a **trajectory-consistency loss** that maps diffusion timesteps to physical PDE times and matches Tweedie estimates to the ground-truth trajectory.
 
